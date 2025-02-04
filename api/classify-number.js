@@ -33,35 +33,38 @@ function isArmstrong(number) {
 module.exports = async (req, res) => {
     const { number } = req.query;
 
-    // Ensure the input is valid (number can be negative or a float)
-    if (number === undefined || isNaN(number)) {
-        return res.status(400).json({ error: 'Invalid number' });
+    // Ensure the input is valid
+    if (!number || isNaN(number)) {
+        return res.status(400).json({
+            error: 'Invalid number',
+            number: number // Fix: Include the invalid input in the response
+        });
     }
 
-    const num = parseFloat(number);  // Allow for float numbers
+    const num = parseFloat(number); // Parse as float to handle both integers and floating-point numbers
 
     // Fun fact: Fetch from Numbers API
     let funFact = '';
     try {
-        const response = await axios.get(`http://numbersapi.com/${num}?json`);
-        funFact = response.data.text;
-    } catch (err) {
+        const response = await axios.get(`http://numbersapi.com/${num}`);
+        funFact = response.data;
+    } catch (error) {
         funFact = 'No fun fact available.';
     }
 
-    // Build the response object
+    // Classify the number
     const properties = [];
-
     if (isArmstrong(num)) properties.push('armstrong');
     if (num % 2 === 0) properties.push('even');
     else properties.push('odd');
 
+    // Prepare the response
     return res.status(200).json({
         number: num,
         is_prime: isPrime(num),
         is_perfect: isPerfect(num),
         properties: properties,
         digit_sum: digitSum(num),
-        fun_fact: funFact,
+        fun_fact: funFact
     });
 };
