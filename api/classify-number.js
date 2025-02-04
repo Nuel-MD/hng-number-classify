@@ -9,7 +9,7 @@ function isPrime(number) {
 }
 
 function isPerfect(number) {
-    if (number <= 0) return false;  // Fix: 0 should not be classified as perfect
+    if (number <= 0) return false;  // Fix: 0 and negative numbers should not be classified as perfect
     let sum = 0;
     for (let i = 1; i < number; i++) {
         if (number % i === 0) sum += i;
@@ -33,37 +33,35 @@ function isArmstrong(number) {
 module.exports = async (req, res) => {
     const { number } = req.query;
 
-    // Ensure the input is valid (non-negative integers only)
-    if (!number || isNaN(number) || number < 0) {
-        return res.status(400).json({ error: 'Invalid number', number: number });
+    // Ensure the input is valid (number can be negative or a float)
+    if (number === undefined || isNaN(number)) {
+        return res.status(400).json({ error: 'Invalid number' });
     }
 
-    const num = parseInt(number);
+    const num = parseFloat(number);  // Allow for float numbers
 
     // Fun fact: Fetch from Numbers API
     let funFact = '';
     try {
         const response = await axios.get(`http://numbersapi.com/${num}?json`);
         funFact = response.data.text;
-    } catch (error) {
-        funFact = 'No fun fact available for this number.';
+    } catch (err) {
+        funFact = 'No fun fact available.';
     }
 
-    // Classify the number
+    // Build the response object
     const properties = [];
+
     if (isArmstrong(num)) properties.push('armstrong');
     if (num % 2 === 0) properties.push('even');
     else properties.push('odd');
 
-    // Prepare the response
-    const result = {
+    return res.status(200).json({
         number: num,
         is_prime: isPrime(num),
         is_perfect: isPerfect(num),
-        properties: properties,  // Fixed to include only valid properties
+        properties: properties,
         digit_sum: digitSum(num),
-        fun_fact: funFact
-    };
-
-    return res.status(200).json(result);
+        fun_fact: funFact,
+    });
 };
