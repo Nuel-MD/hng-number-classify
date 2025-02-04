@@ -9,6 +9,7 @@ function isPrime(number) {
 }
 
 function isPerfect(number) {
+    if (number <= 0) return false;  // Fix: 0 should not be classified as perfect
     let sum = 0;
     for (let i = 1; i < number; i++) {
         if (number % i === 0) sum += i;
@@ -17,7 +18,10 @@ function isPerfect(number) {
 }
 
 function digitSum(number) {
-    return number.toString().split('').reduce((sum, digit) => sum + parseInt(digit), 0);
+    return Math.abs(number)  // Fix: Handle negative numbers by taking the absolute value
+        .toString()
+        .split('')
+        .reduce((sum, digit) => sum + parseInt(digit), 0);
 }
 
 function isArmstrong(number) {
@@ -29,9 +33,9 @@ function isArmstrong(number) {
 module.exports = async (req, res) => {
     const { number } = req.query;
 
-    // Ensure the input is valid
-    if (!number || isNaN(number)) {
-        return res.status(400).json({ error: 'Invalid number' });
+    // Ensure the input is valid (non-negative integers only)
+    if (!number || isNaN(number) || number < 0) {
+        return res.status(400).json({ error: 'Invalid number', number: number });
     }
 
     const num = parseInt(number);
@@ -42,29 +46,24 @@ module.exports = async (req, res) => {
         const response = await axios.get(`http://numbersapi.com/${num}?json`);
         funFact = response.data.text;
     } catch (error) {
-        funFact = 'Could not fetch fun fact.';
+        funFact = 'No fun fact available for this number.';
     }
 
-    // Classification and properties
+    // Classify the number
     const properties = [];
     if (isArmstrong(num)) properties.push('armstrong');
-    if (num % 2 !== 0) properties.push('odd');
-    if (isPerfect(num)) properties.push('perfect');
+    if (num % 2 === 0) properties.push('even');
+    else properties.push('odd');
 
-    // Construct response
+    // Prepare the response
     const result = {
         number: num,
         is_prime: isPrime(num),
         is_perfect: isPerfect(num),
-        properties,
+        properties: properties,  // Fixed to include only valid properties
         digit_sum: digitSum(num),
         fun_fact: funFact
     };
-
-    // CORS headers to ensure cross-origin requests are allowed
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
     return res.status(200).json(result);
 };
